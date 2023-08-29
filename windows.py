@@ -39,22 +39,28 @@ if requirements != []:
 songs = []
 cover = False
 
+dir = f"{os.path.dirname(os.path.abspath(__file__))}".split("\\")
+dir = dir[0] + "\\" + dir[1] + "\\" + dir[2]
+dir += "\Documents\Music downloader"
+print(dir)
+
 try:
-    open(f"{os.path.dirname(os.path.abspath(__file__))}\\cover.jpg","x")
+    os.mkdir(dir)
+    open(f"{dir}\\cover.jpg","x")
     print("DO NOT CLOSE THIS TAB DURING SETUP!! *VERY IMPORTANT*")
     if "y" in input("Do you want song covers added to the files (has lots more extra steps probably not worth it)? (y/n) >> ").lower():
-        open(f"{os.path.dirname(os.path.abspath(__file__))}\\DO NOT DELETE.txt","a").write(f'y\n{input("Enter Google API key: ")}\n{input("Enter Google Programable Search Engine ID: ")}')
+        open(f"{dir}\\DO NOT DELETE.txt","a").write(f'y\n{input("Enter Google API key: ")}\n{input("Enter Google Programable Search Engine ID: ")}')
     else:
-        open(f"{os.path.dirname(os.path.abspath(__file__))}\\DO NOT DELETE.txt","a").write('n')
-    os.mkdir(f"{os.path.dirname(os.path.abspath(__file__))}\\songs")
+        open(f"{dir}\\DO NOT DELETE.txt","a").write('n')
+    os.mkdir(f"{dir}\\songs")
     print("Setup complete.\n\n--------------------------------------------\n")
 except:
     pass
 
-if open(f"{os.path.dirname(os.path.abspath(__file__))}\\DO NOT DELETE.txt","r").read()[0] == "y":
+if open(f"{dir}\\DO NOT DELETE.txt","r").read()[0] == "y":
     cover = True
-    key = open(f"{os.path.dirname(os.path.abspath(__file__))}\\DO NOT DELETE.txt","r").readlines()[1].replace("\n","")
-    engine = open(f"{os.path.dirname(os.path.abspath(__file__))}\\DO NOT DELETE.txt","r").readlines()[2].replace("\n","")
+    key = open(f"{dir}\\DO NOT DELETE.txt","r").readlines()[1].replace("\n","")
+    engine = open(f"{dir}\\DO NOT DELETE.txt","r").readlines()[2].replace("\n","")
 
 
 print("Enter song (e.g. Radioactive, Imagine Dragons) *Leave empty if you've listed all the songs you want.*")
@@ -62,10 +68,15 @@ while True:
     try:
         name,artist = input(" - ").split(", ")
     except Exception as e:
-        print("Starting to download...")
-        break
+        try:
+            name,artist = input("Confirm exit? (leave blank) >> ").split(", ")
+            print("Exiting canceled")
+            songs.append([name,artist])
+            continue
+        except:
+            break
     songs.append([name,artist])
-
+print("Starting to download...")
 
 for song in songs:
     try:
@@ -88,8 +99,7 @@ for song in songs:
         video = YouTube(video_url, use_oauth=True, allow_oauth_cache=True)
         ys = video.streams.get_highest_resolution()
         t = video.streams.filter(only_audio=True).all()
-        out_file = t[0].download(f"{os.path.dirname(os.path.abspath(__file__))}\\songs",filename="song.mp4")
-
+        out_file = t[0].download(f"{dir}\\songs",filename="song.mp4")
 
         def MP4ToMP3(mp4, mp3):
             FILETOCONVERT = AudioFileClip(mp4)
@@ -127,34 +137,34 @@ for song in songs:
                 return "https://cdn.shopify.com/s/files/1/0432/9868/5091/products/MrNoodles_Chicken_Pollo_Kimchi_86g_XX_1024x1024.jpg?v=1632607484"
         if cover:
             img_data = requests.get(search_images(query)).content
-            with open(f"{os.path.dirname(os.path.abspath(__file__))}\\cover.jpg", 'wb') as handler:
+            with open(f"{dir}\\cover.jpg", 'wb') as handler:
                 handler.write(img_data)
 
             
-            audiofile = eyed3.load(f"{os.path.dirname(os.path.abspath(__file__))}\\songs\\song.mp3")
+            audiofile = eyed3.load(f"{dir}\\songs\\song.mp3")
             if (audiofile.tag == None):
                 audiofile.initTag()
 
-            audiofile.tag.images.set(ImageFrame.FRONT_COVER, open(f"{os.path.dirname(os.path.abspath(__file__))}\\cover.jpg",'rb').read(), 'image/jpeg')
+            audiofile.tag.images.set(ImageFrame.FRONT_COVER, open(f"{dir}\\cover.jpg",'rb').read(), 'image/jpeg')
             audiofile.tag.save()
 
-        f = music_tag.load_file(f"{os.path.dirname(os.path.abspath(__file__))}\\songs\\song.mp3")
+        f = music_tag.load_file(f"{dir}\\songs\\song.mp3")
         f['title'] = song[0].title()
         f["artist"] = song[1].title()
         f["album"] = song[0].title()
         f.save()
         try:
-            os.rename(f"{os.path.dirname(os.path.abspath(__file__))}\\songs\\song.mp3",f"{os.path.dirname(os.path.abspath(__file__))}\\songs\\{song[0].title()}.mp3")
+            os.rename(f"{dir}\\songs\\song.mp3",f"{dir}\\songs\\{song[0].title()}.mp3")
             print(f"                        *Downloaded {song[0].title()}*")
         except:
             try:
-                os.rename(f"{os.path.dirname(os.path.abspath(__file__))}\\songs\\song.mp3",f"{os.path.dirname(os.path.abspath(__file__))}\\songs\\{song[0].title()} by {song[1].title()}.mp3")
+                os.rename(f"{dir}\\songs\\song.mp3",f"{dir}\\songs\\{song[0].title()} by {song[1].title()}.mp3")
                 print(f"Already a song called that so had to rename it to {song[0].title()} by {song[1].title()}")
                 print(f"                        *Downloaded {song[0].title()}*")
             except:
                 print(f"                        *DUPLICATE SONG FOUND CAN'T DOWNLOAD {song[0].title()}*")
     except Exception as error:
         print(f"{error} *WITH {song[0].upper()}*")
-print("DONE")
-print("tab will close in 10s")
+print(f"Done, songs can be found at {dir}")
+print("Tab will close in 10s")
 time.sleep(10)
